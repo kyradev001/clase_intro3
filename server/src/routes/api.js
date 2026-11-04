@@ -5,20 +5,20 @@ const dns = require('dns').promises;
 const os = require('os');
 const net = require('net');
 
-// Health Check Endpoint (For Dokploy Health Checks)
+// Health Check Endpoint (For Dokploy Health Checks & Admin Monitoring)
 router.get('/health', (req, res) => {
   const dbStatus = db.getDbStatus();
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    version: '1.0.0',
-    platform: 'Dokploy CI/CD Live Demo',
+    version: '1.0.0-commercial',
+    platform: 'Hamburger Rapid Production Scaffolding',
     database: dbStatus
   });
 });
 
-// List products
+// List products / burgers
 router.get('/products', async (req, res) => {
   try {
     const products = await db.getProducts();
@@ -32,15 +32,30 @@ router.get('/products', async (req, res) => {
   }
 });
 
-// Add new product
+// Add new burger
 router.post('/products', async (req, res) => {
   try {
-    const { name, category, price, stock, image, description } = req.body;
+    const { name, category, specialty_badge, specialty_level, price, stock, image, description, calories, cooking } = req.body;
     if (!name || price === undefined) {
       return res.status(400).json({ success: false, error: 'Nombre y precio son requeridos.' });
     }
-    const product = await db.addProduct({ name, category, price, stock, image, description });
-    res.status(201).json({ success: true, message: 'Producto creado exitosamente', data: product });
+    const product = await db.addProduct({ name, category, specialty_badge, specialty_level, price, stock, image, description, calories, cooking });
+    res.status(201).json({ success: true, message: 'Hamburguesa agregada exitosamente', data: product });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Update burger stock
+router.patch('/products/:id/stock', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { stock } = req.body;
+    if (stock === undefined) {
+      return res.status(400).json({ success: false, error: 'Stock es requerido.' });
+    }
+    const updated = await db.updateProductStock(id, stock);
+    res.json({ success: true, message: 'Stock actualizado', data: updated });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -51,7 +66,7 @@ router.delete('/products/:id', async (req, res) => {
   try {
     const { id } = req.params;
     await db.deleteProduct(id);
-    res.json({ success: true, message: `Producto ${id} eliminado.` });
+    res.json({ success: true, message: `Hamburguesa ${id} eliminada.` });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -61,7 +76,20 @@ router.delete('/products/:id', async (req, res) => {
 router.post('/reset', async (req, res) => {
   try {
     await db.resetProducts();
-    res.json({ success: true, message: 'Datos demo restablecidos.' });
+    res.json({ success: true, message: 'Catálogo de hamburguesas restablecido a los 10 cortes iniciales.' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Consumer Metrics Endpoint (según consumo)
+router.get('/consumers/metrics', (req, res) => {
+  try {
+    const metrics = db.getConsumerMetrics();
+    res.json({
+      success: true,
+      data: metrics
+    });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
