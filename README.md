@@ -1,2 +1,2 @@
-# 🚀 NextCollege en vivo 
+# 🚀 NextCollege en vivo.
 
